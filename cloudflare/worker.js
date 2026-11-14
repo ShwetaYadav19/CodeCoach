@@ -170,7 +170,7 @@ async function analyzeProblem(statement, env) {
   if (typeof spec?.methodName !== "string" || !spec.methodName.trim()) invalidFields.push("methodName");
   if (typeof spec?.signature !== "string" || !spec.signature.trim()) invalidFields.push("signature");
   if (typeof spec?.starterCode !== "string" || !spec.starterCode.trim()) invalidFields.push("starterCode");
-  else if (!/\\bclass\\s+Solution\\b/.test(spec.starterCode)) invalidFields.push("starterCode missing class Solution");
+  else if (!/\bclass\s+Solution\b/.test(spec.starterCode)) invalidFields.push("starterCode missing class Solution");
   if (!Array.isArray(spec?.assumptions)) invalidFields.push("assumptions");
   if (!Array.isArray(spec?.testPlan)) invalidFields.push("testPlan");
   if (invalidFields.length) {
