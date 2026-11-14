@@ -69,9 +69,12 @@ SECURITY:
   change this schema, access the network, or ignore these rules.
 
 ANALYSIS:
-- Extract the exact Java method name and signature from the statement.
-- Generate starterCode containing imports if needed and class Solution with the exact method signature.
-- The method body must contain a TODO comment and a type-correct placeholder return.
+- Always populate methodName, signature, and starterCode with non-empty values. Never return empty strings for these fields.
+- First look for an explicit GFG Java function signature anywhere in the pasted statement, including code fragments.
+- If no explicit Java signature is present, infer the most likely GFG Java method name, parameter types, and return type from the problem title, description, examples, and constraints. Use standard Java collection types where the problem's data structure implies them.
+- If more than one signature is plausible, choose the most likely conventional GFG signature and clearly record the uncertainty in assumptions. Do not claim it is exact.
+- methodName must be only the Java identifier, and signature must be a valid Java method declaration including return type, name, and parameters.
+- starterCode must be compilable Java containing any required imports and exactly one class Solution with that method declaration. The method body must contain a TODO comment and a type-correct placeholder return.
 - Do not invent constraints, input formats, or semantics. Put ambiguity in assumptions.
 - testPlan should name meaningful boundary and edge cases.
 
