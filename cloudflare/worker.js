@@ -242,6 +242,16 @@ async function analyzeProblem(statement, env) {
     };
   }
 
+  spec.referenceSolutionCode = "";
+  spec.referenceSolutionStatus = "unavailable";
+  if (spec.executionHarness?.driverCode && spec.executionHarness?.tests?.length) {
+    const reference = await generateReferenceSolution(statement, spec.signature, spec.methodName, env);
+    if (reference) {
+      spec.referenceSolutionCode = reference;
+      spec.referenceSolutionStatus = "generated";
+    }
+  }
+
   return spec;
 }
 
