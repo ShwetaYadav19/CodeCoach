@@ -42,6 +42,12 @@ const problemSchema = {
                 type: "string",
                 enum: ["problem_example", "ai_generated", "unknown"],
               },
+              validatorType: { type: "string", enum: ["exact_output", "topological_order"] },
+              vertexCount: { type: "integer" },
+              edges: {
+                type: "array",
+                items: { type: "array", items: { type: "integer" } },
+              },
             },
             required: ["name", "input", "expectedOutput", "expectedOutputSource"],
           },
@@ -95,6 +101,21 @@ EXECUTION HARNESS:
   return values, such as list.get(i)++.
 - Prefer simple robust parsing with BufferedReader/StringTokenizer or Scanner.
 - Do not create a Main class that hardcodes test inputs; tests are passed through stdin.
+
+TOPOLOGICAL SORT SPECIAL HANDLING:
+- For a DAG topological-sort problem with signature
+  static ArrayList<Integer> topoSort(int V, ArrayList<ArrayList<Integer>> adj,
+  generate that exact Solution method signature.
+- Generate a Main driver that reads V E, followed by E directed edge pairs (u v),
+  builds the adjacency list, calls new Solution().topoSort(V, adj), and prints
+  the returned vertices separated by spaces.
+- Each test input has one graph only, without a leading test-case count.
+- Every such test must include validatorType "topological_order", vertexCount V,
+  and edges containing the exact directed edge pairs.
+- Do not compare topological-sort output against one expected sequence. Any valid
+  topological ordering must pass.
+- Include DAGs with multiple valid orderings, disconnected vertices, a single vertex,
+  and a chain. Never generate cyclic graphs.
 `;
 
 async function analyzeProblem(statement, env) {
@@ -164,7 +185,13 @@ async function analyzeProblem(statement, env) {
       typeof test.name === "string" &&
       typeof test.input === "string" &&
       typeof test.expectedOutput === "string" &&
-      ["problem_example", "ai_generated", "unknown"].includes(test.expectedOutputSource)
+      ["problem_example", "ai_generated", "unknown"].includes(test.expectedOutputSource) &&
+      (test.validatorType == null || ["exact_output", "topological_order"].includes(test.validatorType)) &&
+      (test.validatorType !== "topological_order" ||
+        (Number.isInteger(test.vertexCount) && test.vertexCount > 0 &&
+          Array.isArray(test.edges) &&
+          test.edges.every((edge) => Array.isArray(edge) && edge.length === 2 &&
+            edge.every(Number.isInteger))))
     );
 
   if (!validHarness) {
