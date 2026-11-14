@@ -354,6 +354,10 @@ export default function App() {
               {problem.executionHarness?.inputFormat && (
                 <p className="muted">CodeCoach test-input format: {problem.executionHarness.inputFormat}</p>
               )}
+              <p className="muted">
+                Reference implementation: {problem.referenceSolutionCode ? 'Available for differential cross-checking' : 'Unavailable; non-example tests will remain unverified'}.
+                Agreement with a generated reference is evidence, not a proof of correctness.
+              </p>
               {problem.executionHarness?.oracleNotes && (
                 <p className="muted">Test-oracle notes: {problem.executionHarness.oracleNotes}</p>
               )}
