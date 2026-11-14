@@ -118,15 +118,23 @@ async function analyzeProblem(statement, env) {
     temperature: 0.1,
   });
 
-  if (!result || typeof result.response !== "string") {
-    throw new Error("The AI model did not return a structured response.");
+  if (!result || result.response == null) {
+    throw new Error("Workers AI returned an empty response. Check the AI binding and model availability.");
   }
 
+  // Workers AI JSON mode may return the schema-shaped object directly.
+  // Some model/runtime combinations return JSON text instead.
   let spec;
-  try {
-    spec = JSON.parse(result.response);
-  } catch {
-    throw new Error("The AI response was not valid JSON. Please try again.");
+  if (typeof result.response === "string") {
+    try {
+      spec = JSON.parse(result.response);
+    } catch {
+      throw new Error("The AI response was not valid JSON. Please try again.");
+    }
+  } else if (typeof result.response === "object" && !Array.isArray(result.response)) {
+    spec = result.response;
+  } else {
+    throw new Error("The AI model returned an unsupported response format.");
   }
 
   if (
