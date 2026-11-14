@@ -36,14 +36,14 @@ type TestResult = {
 };
 
 function assembleJavaSource(solutionCode: string, driverCode: string): string {
-  const importPattern = /^\\s*import\\s+[^;]+;\\s*$/gm;
+  const importPattern = /^\s*import\s+[^;]+;\s*$/gm;
   const imports = [
     ...(solutionCode.match(importPattern) ?? []),
     ...(driverCode.match(importPattern) ?? []),
   ];
   const solutionBody = solutionCode.replace(importPattern, '');
   const driverBody = driverCode.replace(importPattern, '');
-  return [...new Set(imports)].join('\\n') + '\\n\\n' + solutionBody + '\\n\\n' + driverBody;
+  return [...new Set(imports)].join('\n') + '\n\n' + solutionBody + '\n\n' + driverBody;
 }
 
 const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
@@ -139,15 +139,15 @@ export default function App() {
       setError('The parser did not return a validated execution harness. This problem can be analyzed, but it cannot be executed yet.');
       return;
     }
-    if (!/\\bclass\\s+Main\\b/.test(harness.driverCode)) {
+    if (!/\bclass\s+Main\b/.test(harness.driverCode)) {
       setError('The generated execution harness is invalid: it must contain a Java Main class.');
       return;
     }
-    if (/\\bclass\\s+Main\\b/.test(code)) {
+    if (/\bclass\s+Main\b/.test(code)) {
       setError('Please submit only your GFG Solution class. CodeCoach supplies the Main driver.');
       return;
     }
-    if (!/\\bclass\\s+Solution\\b/.test(code)) {
+    if (!/\bclass\s+Solution\b/.test(code)) {
       setError('Your Java code must contain class Solution.');
       return;
     }
@@ -188,7 +188,7 @@ export default function App() {
           continue;
         }
 
-        const actual = String(data.output ?? '').trim().replace(/\\s+/g, ' ');
+        const actual = String(data.output ?? '').trim().replace(/\s+/g, ' ');
         if (typeof test.expectedOutput !== 'string' || !test.expectedOutput.trim() || test.expectedOutputSource === 'unknown') {
           completed.push({
             name: test.name,
@@ -197,7 +197,7 @@ export default function App() {
           });
           continue;
         }
-        const expected = test.expectedOutput.trim().replace(/\\s+/g, ' ');
+        const expected = test.expectedOutput.trim().replace(/\s+/g, ' ');
         const source = test.expectedOutputSource || 'unknown';
         completed.push({
           name: test.name,
