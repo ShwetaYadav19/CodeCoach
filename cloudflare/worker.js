@@ -193,7 +193,7 @@ async function analyzeProblem(statement, env) {
   if (typeof spec?.sourceUrl !== "string") invalidFields.push("sourceUrl");
   if (typeof spec?.sourceTitle !== "string") invalidFields.push("sourceTitle");
   if (!["high", "medium", "low", "none"].includes(spec?.matchConfidence)) invalidFields.push("matchConfidence");
-  if (spec?.signatureSource === "gfg_retrieved" && (!/^https?:\\/\\/(www\\.)?geeksforgeeks\\.org\\//i.test(spec.sourceUrl) || !spec.sourceTitle.trim())) {
+  if (spec?.signatureSource === "gfg_retrieved" && (!/^https?:\/\/(www\.)?geeksforgeeks\.org\//i.test(spec.sourceUrl) || !spec.sourceTitle.trim())) {
     invalidFields.push("GFG source verification");
   }
   if (!Array.isArray(spec?.assumptions)) invalidFields.push("assumptions");
