@@ -32,11 +32,13 @@ type ParsedProblem = {
   testPlan: string[];
   executionSupported?: boolean;
   executionMode?: string;
+  referenceSolutionCode?: string;
+  referenceSolutionStatus?: 'generated' | 'unavailable';
   executionHarness?: ExecutionHarness;
 };
 type TestResult = {
   name: string;
-  status: 'passed' | 'failed' | 'skipped';
+  status: 'passed' | 'cross-checked' | 'failed' | 'skipped';
   detail: string;
 };
 
@@ -144,15 +146,15 @@ export default function App() {
       setError('The parser did not return a validated execution harness. This problem can be analyzed, but it cannot be executed yet.');
       return;
     }
-    if (!/\bclass\s+Main\b/.test(harness.driverCode)) {
+    if (!/\\bclass\\s+Main\\b/.test(harness.driverCode)) {
       setError('The generated execution harness is invalid: it must contain a Java Main class.');
       return;
     }
-    if (/\bclass\s+Main\b/.test(code)) {
+    if (/\\bclass\\s+Main\\b/.test(code)) {
       setError('Please submit only your GFG Solution class. CodeCoach supplies the Main driver.');
       return;
     }
-    if (!/\bclass\s+Solution\b/.test(code)) {
+    if (!/\\bclass\\s+Solution\\b/.test(code)) {
       setError('Your Java code must contain class Solution.');
       return;
     }
@@ -167,58 +169,78 @@ export default function App() {
     try {
       const completed: TestResult[] = [];
       for (const test of harness.tests) {
-        const response = await fetch(`${API}/api/execute`, {
+        const combinedInput = test.input ?? '';
+        const userResponse = await fetch(`${API}/api/execute`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             code: assembleJavaSource(code, harness.driverCode),
-            input: test.input ?? '',
+            input: combinedInput,
           }),
         });
-        const data = await response.json();
-        if (!response.ok) {
+        const userData = await userResponse.json();
+        if (!userResponse.ok || userData.error || userData.exit_code !== 0) {
           completed.push({
             name: test.name,
             status: 'failed',
-            detail: `Execution service error: ${data.error || JSON.stringify(data)}`,
-          });
-          continue;
-        }
-        if (data.error || data.exit_code !== 0) {
-          completed.push({
-            name: test.name,
-            status: 'failed',
-            detail: String(data.error || data.output || 'Compilation or runtime error.'),
+            detail: `Your solution failed to compile or execute: ${userData.error || userData.output || JSON.stringify(userData)}`,
           });
           continue;
         }
 
-        const rawOutput = String(data.output ?? '').trim();
-        const actual = rawOutput.replace(/\s+/g, ' ');
+        const actual = String(userData.output ?? '').trim().replace(/\\s+/g, ' ');
+        if (test.expectedOutputSource === 'problem_example' &&
+            typeof test.expectedOutput === 'string' && test.expectedOutput.trim()) {
+          const expected = test.expectedOutput.trim().replace(/\\s+/g, ' ');
+          completed.push({
+            name: test.name,
+            status: actual === expected ? 'passed' : 'failed',
+            detail: `Expected (problem example): ${expected} | Actual: ${actual}`,
+          });
+          continue;
+        }
 
-
-        if (typeof test.expectedOutput !== 'string' || !test.expectedOutput.trim() || test.expectedOutputSource !== 'problem_example') {
+        if (!problem.referenceSolutionCode) {
           completed.push({
             name: test.name,
             status: 'skipped',
-            detail: `Actual: ${actual || '(empty)'} | Candidate expected: ${test.expectedOutput || '(not supplied)'} | Not scored because the expected output is not independently verified.`,
+            detail: `Actual: ${actual || '(empty)'} | No independent reference implementation was available, so this test cannot be scored.`,
           });
           continue;
         }
-        const expected = test.expectedOutput.trim().replace(/\s+/g, ' ');
-        const source = test.expectedOutputSource || 'unknown';
+
+        const referenceResponse = await fetch(`${API}/api/execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: assembleJavaSource(problem.referenceSolutionCode, harness.driverCode),
+            input: combinedInput,
+          }),
+        });
+        const referenceData = await referenceResponse.json();
+        if (!referenceResponse.ok || referenceData.error || referenceData.exit_code !== 0) {
+          completed.push({
+            name: test.name,
+            status: 'skipped',
+            detail: `Actual: ${actual || '(empty)'} | Reference implementation could not compile or execute: ${referenceData.error || referenceData.output || JSON.stringify(referenceData)}`,
+          });
+          continue;
+        }
+
+        const referenceOutput = String(referenceData.output ?? '').trim().replace(/\\s+/g, ' ');
         completed.push({
           name: test.name,
-          status: actual === expected ? 'passed' : 'failed',
-          detail: `Expected: ${expected} | Actual: ${actual} | Expected-output source: ${source}`,
+          status: actual === referenceOutput ? 'cross-checked' : 'failed',
+          detail: `Your output: ${actual || '(empty)'} | Reference output: ${referenceOutput || '(empty)'} | ${actual === referenceOutput ? 'Outputs agree; this is a differential cross-check, not a proof of correctness.' : 'Output mismatch against the generated reference implementation.'}`,
         });
       }
 
       setResults(completed);
       const passed = completed.filter((item) => item.status === 'passed').length;
+      const crossChecked = completed.filter((item) => item.status === 'cross-checked').length;
       const failed = completed.filter((item) => item.status === 'failed').length;
       const skipped = completed.filter((item) => item.status === 'skipped').length;
-      setSummary(`${passed} passed, ${failed} failed, ${skipped} unverified. Each test was compiled and executed separately. ${harness.oracleNotes || ''}`);
+      setSummary(`${passed} passed against statement examples, ${crossChecked} cross-checked against a separately generated reference, ${failed} failed, ${skipped} unverified. Differential agreement is useful evidence, not a formal correctness proof. Each solution/reference execution was compiled separately. ${harness.oracleNotes || ''}`);
     } catch (cause) {
       setError(`Execution request failed. ${cause instanceof Error ? cause.message : ''}`);
       setSummary('No reliable execution result is available.');
@@ -351,7 +373,7 @@ export default function App() {
       <section className="card report">
         <div className="section-head">
           <div><span className="step">04</span><h3>Evaluation report</h3></div>
-          <span className="muted">{results.length ? `${results.filter((item) => item.status === 'passed').length}/${results.length} passed` : 'Waiting for submission'}</span>
+          <span className="muted">{results.length ? `${results.filter((item) => item.status === 'passed' || item.status === 'cross-checked').length}/${results.length} checked` : 'Waiting for submission'}</span>
         </div>
         <p className="summary">{summary}</p>
         {error && <div className="error">{error}</div>}
@@ -359,7 +381,7 @@ export default function App() {
           <div className="test-list">
             {results.map((item, index) => (
               <div className="test-row" key={`${item.name}-${index}`}>
-                {item.status === 'passed' ? <CheckCircle2 className="pass-icon" size={16} /> : <XCircle className="fail-icon" size={16} />}
+                {item.status === 'passed' || item.status === 'cross-checked' ? <CheckCircle2 className="pass-icon" size={16} /> : item.status === 'skipped' ? <AlertTriangle size={16} /> : <XCircle className="fail-icon" size={16} />}
                 <strong>{item.name}</strong>
                 <span className={`status ${item.status}`}>{item.status}</span>
                 <small>{item.detail}</small>
