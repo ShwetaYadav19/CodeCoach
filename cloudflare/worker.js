@@ -161,17 +161,17 @@ async function analyzeProblem(statement, env) {
     throw new Error("OpenAI returned structured output that could not be parsed.");
   }
 
-  if (
-    !spec ||
-    typeof spec.title !== "string" ||
-    typeof spec.methodName !== "string" ||
-    typeof spec.signature !== "string" ||
-    typeof spec.starterCode !== "string" ||
-    !Array.isArray(spec.assumptions) ||
-    !Array.isArray(spec.testPlan) ||
-    !spec.starterCode.includes("class Solution")
-  ) {
-    throw new Error("OpenAI returned an incomplete problem specification.");
+  const invalidFields = [];
+  if (!spec || typeof spec !== "object") invalidFields.push("root object");
+  if (typeof spec?.title !== "string" || !spec.title.trim()) invalidFields.push("title");
+  if (typeof spec?.methodName !== "string" || !spec.methodName.trim()) invalidFields.push("methodName");
+  if (typeof spec?.signature !== "string" || !spec.signature.trim()) invalidFields.push("signature");
+  if (typeof spec?.starterCode !== "string" || !spec.starterCode.trim()) invalidFields.push("starterCode");
+  else if (!/\\bclass\\s+Solution\\b/.test(spec.starterCode)) invalidFields.push("starterCode missing class Solution");
+  if (!Array.isArray(spec?.assumptions)) invalidFields.push("assumptions");
+  if (!Array.isArray(spec?.testPlan)) invalidFields.push("testPlan");
+  if (invalidFields.length) {
+    throw new Error("OpenAI returned an incomplete problem specification. Invalid fields: " + invalidFields.join(", "));
   }
 
   const harness = spec.executionHarness;
