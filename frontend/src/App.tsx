@@ -189,11 +189,11 @@ export default function App() {
         }
 
         const actual = String(data.output ?? '').trim().replace(/\s+/g, ' ');
-        if (typeof test.expectedOutput !== 'string' || !test.expectedOutput.trim() || test.expectedOutputSource === 'unknown') {
+        if (typeof test.expectedOutput !== 'string' || !test.expectedOutput.trim() || test.expectedOutputSource !== 'problem_example') {
           completed.push({
             name: test.name,
             status: 'skipped',
-            detail: `Actual output: ${actual || '(empty)'}. No trusted expected output was supplied.`,
+            detail: `Actual: ${actual || '(empty)'} | Candidate expected: ${test.expectedOutput || '(not supplied)'} | Not scored because the expected output is not independently verified.`,
           });
           continue;
         }
