@@ -11,6 +11,27 @@ A public, no-login DSA practice tool. Paste a problem statement, generate a Java
 
 **GitHub Pages is static hosting. It cannot run Spring Boot or compile submitted Java.** The backend and execution service must be deployed separately before Compile/Run can work online.
 
+## Cloudflare Worker deployment
+
+The source for the current API Worker is in `cloudflare/worker.js`.
+
+1. Open the CodeCoach Worker in the Cloudflare dashboard.
+2. Replace its script with the contents of `cloudflare/worker.js`.
+3. Keep the existing Workers AI binding named `AI`.
+4. Keep the secret `ONLINECOMPILER_API_KEY` configured as a Worker secret. Do not paste it into GitHub or frontend code.
+5. Deploy the Worker, then verify `/health` reports both `aiConfigured: true` and `compilerConfigured: true`.
+
+The parser now returns an `executionHarness` containing a Java `Main` driver and independent test inputs. The frontend compiles the submitted `Solution` together with that driver once per test input. The driver reads from standard input and calls the parsed method.
+
+Expected-output provenance is retained:
+- `problem_example`: directly taken from a statement example.
+- `ai_generated`: derived by the model and should be treated as unverified.
+- `unknown`: the case is executed, but not scored as pass/fail.
+
+A problem may still be analyzed without being executable. If the statement does not define enough input-format details to generate a safe driver, the parser deliberately returns no harness rather than guessing.
+
+**Before making the public endpoint widely available:** add rate limiting / abuse protection for both AI parsing and code execution. The current public Worker endpoints do not authenticate callers, and provider-side quotas, concurrency, and execution limits still apply.
+
 ## Run locally
 
 Frontend:
