@@ -14,6 +14,7 @@ type GeneratedTestCase = {
 
 type ExecutionHarness = {
   driverCode: string;
+  inputFormat?: string;
   tests: GeneratedTestCase[];
   oracleNotes?: string;
 };
@@ -327,6 +328,9 @@ export default function App() {
                   <AlertTriangle size={16} />
                   <span>Problem analysis is available, but the parser has not supplied a problem-specific execution driver and test inputs yet.</span>
                 </div>
+              )}
+              {problem.executionHarness?.inputFormat && (
+                <p className="muted">CodeCoach test-input format: {problem.executionHarness.inputFormat}</p>
               )}
               {problem.executionHarness?.oracleNotes && (
                 <p className="muted">Test-oracle notes: {problem.executionHarness.oracleNotes}</p>
