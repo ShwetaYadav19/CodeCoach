@@ -12,6 +12,8 @@ type ParsedProblem = {
   starterCode: string;
   assumptions: string[];
   testPlan: string[];
+  executionSupported?: boolean;
+  executionMode?: string;
 };
 type TestResult = {
   name: string;
@@ -313,7 +315,7 @@ class Main {
           </div>
           <div className="editor-actions">
             <button className="ghost" onClick={() => setCode(problem?.starterCode ?? provisional.starterCode)}>Reset scaffold</button>
-            <button className="primary" onClick={runTests} disabled={busy || !problem || problem === provisional}>
+            <button className="primary" onClick={runTests} disabled={busy || !problem || problem === provisional || problem.executionSupported !== true || problem.executionMode !== 'dijkstra-v1'}>
               <Play size={15} /> {busy ? 'Running…' : 'Run all tests'}
             </button>
           </div>
@@ -327,6 +329,14 @@ class Main {
             <>
               <h4>{problem.title}</h4>
               <p className="muted">Method: <code>{problem.signature}</code></p>
+              {problem.executionSupported === true && problem.executionMode === 'dijkstra-v1' ? (
+                <p className="muted">Automatic execution is enabled for the Dijkstra test driver.</p>
+              ) : (
+                <div className="notice">
+                  <AlertTriangle size={16} />
+                  <span>Problem analysis is available, but automatic execution is not yet supported for this problem. The current compiler driver is Dijkstra-specific, so CodeCoach will not run it against a different method.</span>
+                </div>
+              )}
               <h4>Planned edge cases</h4>
               <ul>{problem.testPlan.map((item) => <li key={item}>{item}</li>)}</ul>
               <h4>Review before execution</h4>
