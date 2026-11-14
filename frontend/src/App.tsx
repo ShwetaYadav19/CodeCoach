@@ -23,6 +23,10 @@ type ParsedProblem = {
   methodName: string;
   signature: string;
   starterCode: string;
+  signatureSource?: 'gfg_retrieved' | 'user_supplied' | 'ai_inferred';
+  sourceUrl?: string;
+  sourceTitle?: string;
+  matchConfidence?: 'high' | 'medium' | 'low' | 'none';
   assumptions: string[];
   testPlan: string[];
   executionSupported?: boolean;
@@ -304,6 +308,18 @@ export default function App() {
             <>
               <h4>{problem.title}</h4>
               <p className="muted">Method: <code>{problem.signature}</code></p>
+              <p className="muted">
+                Signature source: {
+                  problem.signatureSource === 'gfg_retrieved'
+                    ? 'Retrieved from GeeksforGeeks'
+                    : problem.signatureSource === 'user_supplied'
+                      ? 'Provided in pasted statement'
+                      : 'AI inferred — verify before submitting'
+                } {problem.matchConfidence ? `(confidence: ${problem.matchConfidence})` : ''}
+              </p>
+              {problem.sourceUrl && (
+                <p className="muted">Reference: <a href={problem.sourceUrl} target="_blank" rel="noreferrer">{problem.sourceTitle || 'GeeksforGeeks problem page'}</a></p>
+              )}
               {problem.executionHarness?.driverCode && problem.executionHarness.tests?.length ? (
                 <p className="muted">A problem-specific Java driver was generated with {problem.executionHarness.tests.length} test cases.</p>
               ) : (
