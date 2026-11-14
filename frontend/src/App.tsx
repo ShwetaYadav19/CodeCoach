@@ -178,7 +178,7 @@ export default function App() {
         }
 
         const actual = String(data.output ?? '').trim().replace(/\\s+/g, ' ');
-        if (typeof test.expectedOutput !== 'string') {
+        if (typeof test.expectedOutput !== 'string' || !test.expectedOutput.trim() || test.expectedOutputSource === 'unknown') {
           completed.push({
             name: test.name,
             status: 'skipped',
@@ -297,6 +297,9 @@ export default function App() {
                   <AlertTriangle size={16} />
                   <span>Problem analysis is available, but the parser has not supplied a problem-specific execution driver and test inputs yet.</span>
                 </div>
+              )}
+              {problem.executionHarness?.oracleNotes && (
+                <p className="muted">Test-oracle notes: {problem.executionHarness.oracleNotes}</p>
               )}
               <h4>Planned edge cases</h4>
               <ul>{problem.testPlan.map((item) => <li key={item}>{item}</li>)}</ul>
