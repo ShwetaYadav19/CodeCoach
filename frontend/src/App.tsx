@@ -111,20 +111,78 @@ export default function App() {
     setError('');
     setResults([]);
     try {
-      const response = await fetch(`${API}/api/submissions`, {
+      // First execution milestone: run the GFG Solution class against one
+      // deterministic Dijkstra sample using an appended Java driver.
+      const driver = `
+
+class Main {
+    private static void addEdge(ArrayList<ArrayList<ArrayList<Integer>>> adj,
+                                int u, int v, int w) {
+        ArrayList<Integer> a = new ArrayList<>();
+        a.add(v); a.add(w);
+        adj.get(u).add(a);
+
+        ArrayList<Integer> b = new ArrayList<>();
+        b.add(u); b.add(w);
+        adj.get(v).add(b);
+    }
+
+    public static void main(String[] args) {
+        int n = 5;
+        ArrayList<ArrayList<ArrayList<Integer>>> adj = new ArrayList<>();
+        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());
+
+        addEdge(adj, 0, 1, 2);
+        addEdge(adj, 0, 2, 4);
+        addEdge(adj, 1, 2, 1);
+        addEdge(adj, 1, 3, 7);
+        addEdge(adj, 2, 4, 3);
+        addEdge(adj, 4, 3, 2);
+
+        int[] answer = new Solution().dijkstra(n, adj, 0);
+        for (int i = 0; i < answer.length; i++) {
+            if (i > 0) System.out.print(" ");
+            System.out.print(answer[i]);
+        }
+    }
+}
+`;
+
+      const response = await fetch(`${API}/api/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          problem,
-          sourceCode: code,
-          language: 'java',
-          mode: 'full',
+          code: code + driver,
+          input: '',
         }),
       });
-      if (!response.ok) throw new Error(await response.text());
+
       const data = await response.json();
-      setResults(data.tests ?? []);
-      setSummary(data.summary ?? 'Execution completed.');
+      if (!response.ok) {
+        throw new Error(data.error || JSON.stringify(data));
+      }
+
+      const expected = '0 2 3 8 6';
+      const actual = String(data.output ?? '').trim().replace(/\\s+/g, ' ');
+      const passed =
+        data.exit_code === 0 &&
+        !data.error &&
+        actual === expected;
+
+      setResults([{
+        name: 'Dijkstra sample graph',
+        status: passed ? 'passed' : 'failed',
+        detail: data.error
+          ? data.error
+          : `Expected: ${expected} | Actual: ${actual || '(empty output)'} | Exit code: ${data.exit_code ?? 'unknown'}`,
+      }]);
+      setSummary(
+        data.error
+          ? 'Compilation or runtime error returned by the Java compiler.'
+          : passed
+            ? 'Java code compiled and the sample test passed.'
+            : 'Java code executed, but the sample output did not match.'
+      );
     } catch (cause) {
       setError(`Execution service is not configured. Your code was not compiled or run. ${cause instanceof Error ? cause.message : ''}`);
       setSummary('No execution result is available.');
