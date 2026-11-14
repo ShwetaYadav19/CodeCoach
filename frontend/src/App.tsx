@@ -146,15 +146,15 @@ export default function App() {
       setError('The parser did not return a validated execution harness. This problem can be analyzed, but it cannot be executed yet.');
       return;
     }
-    if (!/\\bclass\\s+Main\\b/.test(harness.driverCode)) {
+    if (!/\bclass\s+Main\\b/.test(harness.driverCode)) {
       setError('The generated execution harness is invalid: it must contain a Java Main class.');
       return;
     }
-    if (/\\bclass\\s+Main\\b/.test(code)) {
+    if (/\bclass\s+Main\\b/.test(code)) {
       setError('Please submit only your GFG Solution class. CodeCoach supplies the Main driver.');
       return;
     }
-    if (!/\\bclass\\s+Solution\\b/.test(code)) {
+    if (!/\bclass\s+Solution\\b/.test(code)) {
       setError('Your Java code must contain class Solution.');
       return;
     }
@@ -188,10 +188,10 @@ export default function App() {
           continue;
         }
 
-        const actual = String(userData.output ?? '').trim().replace(/\\s+/g, ' ');
+        const actual = String(userData.output ?? '').trim().replace(/\s+/g, ' ');
         if (test.expectedOutputSource === 'problem_example' &&
             typeof test.expectedOutput === 'string' && test.expectedOutput.trim()) {
-          const expected = test.expectedOutput.trim().replace(/\\s+/g, ' ');
+          const expected = test.expectedOutput.trim().replace(/\s+/g, ' ');
           completed.push({
             name: test.name,
             status: actual === expected ? 'passed' : 'failed',
@@ -227,7 +227,7 @@ export default function App() {
           continue;
         }
 
-        const referenceOutput = String(referenceData.output ?? '').trim().replace(/\\s+/g, ' ');
+        const referenceOutput = String(referenceData.output ?? '').trim().replace(/\s+/g, ' ');
         completed.push({
           name: test.name,
           status: actual === referenceOutput ? 'cross-checked' : 'failed',
