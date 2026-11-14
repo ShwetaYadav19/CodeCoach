@@ -107,11 +107,11 @@ export default function App() {
       setError('Generate a real problem scaffold before submitting.');
       return;
     }
-    if (/\\bclass\\s+Main\\b/.test(code)) {
+    if (/\bclass\s+Main\b/.test(code)) {
       setError('Please submit only your GFG Solution class. CodeCoach generates the Main driver automatically.');
       return;
     }
-    if (!/\\bclass\\s+Solution\\b/.test(code)) {
+    if (!/\bclass\s+Solution\b/.test(code)) {
       setError('Your Java code must contain class Solution.');
       return;
     }
@@ -204,8 +204,8 @@ class Main {
         '0 3 7',
         '0 2 2 5',
       ];
-      const actualLines = String(data.output ?? '').trim().split(/\\r?\\n/)
-        .map((line) => line.trim().replace(/\\s+/g, ' '));
+      const actualLines = String(data.output ?? '').trim().split(/\r?\n/)
+        .map((line) => line.trim().replace(/\s+/g, ' '));
       const names = [
         'Multiple routes and longer alternative',
         'Single vertex with no edges',
