@@ -35,6 +35,7 @@ const problemSchema = {
       additionalProperties: false,
       properties: {
         driverCode: { type: "string" },
+        inputFormat: { type: "string" },
         oracleNotes: { type: "string" },
         tests: {
           type: "array",
@@ -54,7 +55,7 @@ const problemSchema = {
           },
         },
       },
-      required: ["driverCode", "oracleNotes", "tests"],
+      required: ["driverCode", "inputFormat", "oracleNotes", "tests"],
     },
   },
   required: [
@@ -87,13 +88,29 @@ RETRIEVAL-FIRST SIGNATURE RESOLUTION:
 - If more than one signature is plausible, choose the most likely conventional GFG signature and clearly record the uncertainty in assumptions. Do not claim it is exact.
 - methodName must be only the Java identifier, and signature must be a valid Java method declaration including return type, name, and parameters.
 - starterCode must be compilable Java containing any required imports and exactly one class Solution with that method declaration. The method body must contain a TODO comment and a type-correct placeholder return.
-- Do not invent constraints, input formats, or semantics. Put ambiguity in assumptions.
+- Do not invent problem constraints or semantics. Put ambiguity in assumptions.
 - testPlan should name meaningful boundary and edge cases.
 
-EXECUTION HARNESS:
-- Generate a Java class Main that reads one test case from standard input using the problem's
-  stated input format, constructs all required objects, calls the exact Solution method, and
-  prints the result in the problem's expected output format.
+EXECUTION HARNESS — CODECOACH-OWNED INPUT PROTOCOL:
+- The GFG problem's console input format is NOT required for CodeCoach execution. Many GFG
+  function-style problems specify only a Java method signature and have no standalone stdin format.
+- When the statement does not define a complete stdin grammar, YOU MUST define a simple,
+  deterministic CodeCoach-only input format that can construct every parameter in the exact
+  Java signature. Do not return an empty driver merely because GFG did not publish a console format.
+- Document the format precisely in executionHarness.inputFormat. It must describe field order,
+  delimiters, counts, and how strings/collections are represented. Keep it simple and robust.
+- Generate Main to parse exactly that documented format, construct the parameter objects, call
+  the exact Solution method once, and print the return value in a deterministic format.
+- Generate every test input using that same CodeCoach format. Ensure test inputs are consistent
+  with Main's parser. Do not label this custom format as the GFG input format.
+- Prefer line-oriented formats for strings (to preserve spaces) and count-prefixed formats for
+  collections/arrays. For example, a List<List<String>> of ticket pairs can be encoded as a
+  ticket count followed by one "from to" pair per line; explain that city names cannot contain
+  the chosen delimiter, or use a robust length-prefixed/JSON-like encoding if they can.
+- If a parameter type cannot be safely constructed with a clear format, explain that specific
+  limitation in oracleNotes and leave driverCode/tests empty. Do not use missing GFG stdin format
+  as the reason.
+- The harness must compile together with starterCode and must not declare class Solution.
 - The harness must compile together with starterCode and must not declare class Solution.
 - Use only standard Java libraries. Do not use package declarations, external libraries, files,
   network access, reflection, or process execution.
@@ -104,9 +121,8 @@ EXECUTION HARNESS:
   by an example in the pasted statement. Mark ai_generated when you derived the expected result
   yourself. If you cannot confidently derive it, set expectedOutput to an empty string and source
   to unknown. Never pretend an uncertain output is verified.
-- If the statement does not provide enough information to build an unambiguous input parser and
-  method invocation, return driverCode as an empty string and tests as an empty array. Explain
-  exactly what is missing in oracleNotes and assumptions.
+- Return an empty driver only if the Java method signature or parameter construction genuinely
+  cannot be determined safely; missing GFG console-input instructions alone is not a blocker.
 - Do not generate a driver for a method whose signature cannot be confidently identified.
 - Ensure driverCode reads all required input and invokes the method once for the test case.
 - Ensure generated Java code uses valid Java syntax. Do not use invalid post-increment on method
@@ -206,6 +222,7 @@ async function analyzeProblem(statement, env) {
   const validHarness =
     harness &&
     typeof harness.driverCode === "string" &&
+    typeof harness.inputFormat === "string" &&
     (harness.driverCode === "" ||
       (harness.driverCode.includes("class Main") && !harness.driverCode.includes("class Solution"))) &&
     Array.isArray(harness.tests) &&
