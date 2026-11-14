@@ -139,7 +139,13 @@ async function analyzeProblem(statement, env) {
           schema: problemSchema,
         },
       },
-      max_output_tokens: 7000,
+      tools: [{
+        type: "web_search",
+        filters: { allowed_domains: ["geeksforgeeks.org"] },
+        search_context_size: "high",
+      }],
+      tool_choice: "required",
+      max_output_tokens: 9000,
     }),
   });
 
