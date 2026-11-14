@@ -111,7 +111,6 @@ EXECUTION HARNESS — CODECOACH-OWNED INPUT PROTOCOL:
   limitation in oracleNotes and leave driverCode/tests empty. Do not use missing GFG stdin format
   as the reason.
 - The harness must compile together with starterCode and must not declare class Solution.
-- The harness must compile together with starterCode and must not declare class Solution.
 - Use only standard Java libraries. Do not use package declarations, external libraries, files,
   network access, reflection, or process execution.
 - Generate up to 12 useful independent test cases. Each test's input must match the input format
