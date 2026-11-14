@@ -35,6 +35,17 @@ type TestResult = {
   detail: string;
 };
 
+function assembleJavaSource(solutionCode: string, driverCode: string): string {
+  const importPattern = /^\\s*import\\s+[^;]+;\\s*$/gm;
+  const imports = [
+    ...solutionCode.match(importPattern) ?? [],
+    ...driverCode.match(importPattern) ?? [],
+  ];
+  const solutionBody = solutionCode.replace(importPattern, '');
+  const driverBody = driverCode.replace(importPattern, '');
+  return [...new Set(imports)].join('\\n') + '\\n\\n' + solutionBody + '\\n\\n' + driverBody;
+}
+
 const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 const demoStatement = `Given a weighted graph and a source vertex src, find the shortest distance from src to every other vertex. Return -1 for unreachable vertices.
@@ -155,7 +166,7 @@ export default function App() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            code: code + '\\n\\n' + harness.driverCode,
+            code: assembleJavaSource(code, harness.driverCode),
             input: test.input ?? '',
           }),
         });
