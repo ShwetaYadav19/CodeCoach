@@ -120,7 +120,7 @@ export default function App() {
     setError('');
     setResults([]);
     try {
-      const driver = \`
+      const driver = `
 
 class Main {
     private static void addEdge(ArrayList<ArrayList<ArrayList<Integer>>> adj,
@@ -161,9 +161,9 @@ class Main {
         }, 0);
     }
 }
-\`;
+`;
 
-      const response = await fetch(\`\${API}/api/execute\`, {
+      const response = await fetch(`${API}/api/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: code + driver, input: '' }),
@@ -198,7 +198,7 @@ class Main {
         return {
           name: names[index],
           status: actual === expectedOutput ? 'passed' : 'failed',
-          detail: \`Expected: \${expectedOutput} | Actual: \${actual}\`,
+          detail: `Expected: ${expectedOutput} | Actual: ${actual}`,
         };
       });
 
@@ -206,15 +206,15 @@ class Main {
         testResults.push({
           name: 'Output format',
           status: 'failed',
-          detail: \`Expected \${expected.length} output lines, received \${actualLines.length}.\`,
+          detail: `Expected ${expected.length} output lines, received ${actualLines.length}.`,
         });
       }
 
       setResults(testResults);
       const passedCount = testResults.filter((item) => item.status === 'passed').length;
-      setSummary(\`\${passedCount}/\${testResults.length} tests passed. Execution time: \${data.time ?? 'not reported'} seconds.\`);
+      setSummary(`${passedCount}/${testResults.length} tests passed. Execution time: ${data.time ?? 'not reported'} seconds.`);
     } catch (cause) {
-      setError(\`Execution request failed. \${cause instanceof Error ? cause.message : ''}\`);
+      setError(`Execution request failed. ${cause instanceof Error ? cause.message : ''}`);
       setSummary('No reliable execution result is available.');
     } finally {
       setBusy(false);
