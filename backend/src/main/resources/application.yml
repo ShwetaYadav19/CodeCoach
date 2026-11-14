@@ -1,0 +1,10 @@
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: always
+app:
+  judge0-base-url: ${JUDGE0_BASE_URL:}
+  judge0-auth-token: ${JUDGE0_AUTH_TOKEN:}
+  ai-base-url: ${AI_BASE_URL:}
+  ai-api-key: ${AI_API_KEY:}
+  ai-model: ${AI_MODEL:}
