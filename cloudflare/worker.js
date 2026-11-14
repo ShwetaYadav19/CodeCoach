@@ -284,10 +284,10 @@ The reference is used for differential testing, not as a proof of correctness.
   let code = content.find((item) => item.type === "output_text")?.text || "";
   code = code.trim().replace(/^```(?:java)?\s*/i, "").replace(/\s*```$/, "");
   if (!code || code === "ORACLE_UNAVAILABLE") return "";
-  if (!/\\bclass\\s+Solution\\b/.test(code) ||
-      !new RegExp("\\\\b" + methodName + "\\\\s*\\\\(").test(code) ||
-      /\\bclass\\s+Main\\b/.test(code) ||
-      /\\bpackage\\s+/.test(code)) return "";
+  if (!/\bclass\s+Solution\b/.test(code) ||
+      !new RegExp("\\b" + methodName + "\\s*\\(").test(code) ||
+      /\bclass\s+Main\b/.test(code) ||
+      /\bpackage\s+/.test(code)) return "";
   return code;
 }
 
