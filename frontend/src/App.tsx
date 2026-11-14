@@ -107,11 +107,11 @@ export default function App() {
       setError('Generate a real problem scaffold before submitting.');
       return;
     }
-    if (/\bclass\s+Main\b/.test(code)) {
+    if (/\\bclass\\s+Main\\b/.test(code)) {
       setError('Please submit only your GFG Solution class. CodeCoach generates the Main driver automatically.');
       return;
     }
-    if (!/\bclass\s+Solution\b/.test(code)) {
+    if (!/\\bclass\\s+Solution\\b/.test(code)) {
       setError('Your Java code must contain class Solution.');
       return;
     }
@@ -146,6 +146,7 @@ class Main {
     }
 
     public static void main(String[] args) {
+        // Original baseline cases
         runCase(5, new int[][] {
             {0,1,2}, {0,2,4}, {1,2,1}, {1,3,7}, {2,4,3}, {4,3,2}
         }, 0);
@@ -158,6 +159,17 @@ class Main {
         }, 0);
         runCase(5, new int[][] {
             {0,1,1}, {0,2,5}, {1,2,1}, {1,3,4}, {2,3,1}, {3,4,1}
+        }, 0);
+
+        // Additional edge cases
+        runCase(4, new int[][] {
+            {0,1,7}, {1,2,2}, {2,3,1}
+        }, 2);
+        runCase(3, new int[][] {
+            {0,1,10}, {0,1,3}, {1,2,4}, {0,2,20}
+        }, 0);
+        runCase(4, new int[][] {
+            {0,1,2}, {0,2,2}, {1,3,3}, {2,3,3}
         }, 0);
     }
 }
@@ -182,15 +194,27 @@ class Main {
         return;
       }
 
-      const expected = ['0 2 3 8 6', '0', '0 0 5', '0 5 3 9', '0 1 2 3 4'];
-      const actualLines = String(data.output ?? '').trim().split(/\r?\n/)
-        .map((line) => line.trim().replace(/\s+/g, ' '));
+      const expected = [
+        '0 2 3 8 6',
+        '0',
+        '0 0 5',
+        '0 5 3 9',
+        '0 1 2 3 4',
+        '10 7 0 1',
+        '0 3 7',
+        '0 2 2 5',
+      ];
+      const actualLines = String(data.output ?? '').trim().split(/\\r?\\n/)
+        .map((line) => line.trim().replace(/\\s+/g, ' '));
       const names = [
         'Multiple routes and longer alternative',
         'Single vertex with no edges',
         'Zero-weight edge',
         'Cheaper indirect route',
         'Several competing paths',
+        'Source vertex is not zero',
+        'Duplicate edges',
+        'Multiple equal-cost shortest paths',
       ];
 
       const testResults: TestResult[] = expected.map((expectedOutput, index) => {
