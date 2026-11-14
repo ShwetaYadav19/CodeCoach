@@ -5,6 +5,19 @@ import {
   ShieldCheck, WandSparkles, XCircle,
 } from 'lucide-react';
 
+type GeneratedTestCase = {
+  name: string;
+  input: string;
+  expectedOutput?: string;
+  expectedOutputSource?: 'problem_example' | 'reference_solution' | 'ai_generated' | 'unknown';
+};
+
+type ExecutionHarness = {
+  driverCode: string;
+  tests: GeneratedTestCase[];
+  oracleNotes?: string;
+};
+
 type ParsedProblem = {
   title: string;
   methodName: string;
@@ -14,6 +27,7 @@ type ParsedProblem = {
   testPlan: string[];
   executionSupported?: boolean;
   executionMode?: string;
+  executionHarness?: ExecutionHarness;
 };
 type TestResult = {
   name: string;
@@ -109,12 +123,25 @@ export default function App() {
       setError('Generate a real problem scaffold before submitting.');
       return;
     }
-    if (/\bclass\s+Main\b/.test(code)) {
-      setError('Please submit only your GFG Solution class. CodeCoach generates the Main driver automatically.');
+    const harness = problem.executionHarness;
+    if (!harness || !harness.driverCode || !Array.isArray(harness.tests) || harness.tests.length === 0) {
+      setError('The parser did not return a validated execution harness. This problem can be analyzed, but it cannot be executed yet.');
       return;
     }
-    if (!/\bclass\s+Solution\b/.test(code)) {
+    if (!/\\bclass\\s+Main\\b/.test(harness.driverCode)) {
+      setError('The generated execution harness is invalid: it must contain a Java Main class.');
+      return;
+    }
+    if (/\\bclass\\s+Main\\b/.test(code)) {
+      setError('Please submit only your GFG Solution class. CodeCoach supplies the Main driver.');
+      return;
+    }
+    if (!/\\bclass\\s+Solution\\b/.test(code)) {
       setError('Your Java code must contain class Solution.');
+      return;
+    }
+    if (harness.tests.length > 20) {
+      setError('The generated harness contains too many test cases. Maximum allowed is 20.');
       return;
     }
 
@@ -122,123 +149,57 @@ export default function App() {
     setError('');
     setResults([]);
     try {
-      const driver = `
-
-class Main {
-    private static void addEdge(ArrayList<ArrayList<ArrayList<Integer>>> adj,
-                                int u, int v, int w) {
-        ArrayList<Integer> a = new ArrayList<>();
-        a.add(v); a.add(w);
-        adj.get(u).add(a);
-        ArrayList<Integer> b = new ArrayList<>();
-        b.add(u); b.add(w);
-        adj.get(v).add(b);
-    }
-
-    private static void runCase(int n, int[][] edges, int src) {
-        ArrayList<ArrayList<ArrayList<Integer>>> adj = new ArrayList<>();
-        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());
-        for (int[] edge : edges) addEdge(adj, edge[0], edge[1], edge[2]);
-        int[] answer = new Solution().dijkstra(n, adj, src);
-        for (int i = 0; i < answer.length; i++) {
-            if (i > 0) System.out.print(" ");
-            System.out.print(answer[i]);
+      const completed: TestResult[] = [];
+      for (const test of harness.tests) {
+        const response = await fetch(`${API}/api/execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: code + '\\n\\n' + harness.driverCode,
+            input: test.input ?? '',
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          completed.push({
+            name: test.name,
+            status: 'failed',
+            detail: `Execution service error: ${data.error || JSON.stringify(data)}`,
+          });
+          continue;
         }
-        System.out.println();
-    }
+        if (data.error || data.exit_code !== 0) {
+          completed.push({
+            name: test.name,
+            status: 'failed',
+            detail: String(data.error || data.output || 'Compilation or runtime error.'),
+          });
+          continue;
+        }
 
-    public static void main(String[] args) {
-        // Original baseline cases
-        runCase(5, new int[][] {
-            {0,1,2}, {0,2,4}, {1,2,1}, {1,3,7}, {2,4,3}, {4,3,2}
-        }, 0);
-        runCase(1, new int[][] {}, 0);
-        runCase(3, new int[][] {
-            {0,1,0}, {1,2,5}, {0,2,9}
-        }, 0);
-        runCase(4, new int[][] {
-            {0,1,10}, {0,2,3}, {2,1,2}, {1,3,4}, {2,3,8}
-        }, 0);
-        runCase(5, new int[][] {
-            {0,1,1}, {0,2,5}, {1,2,1}, {1,3,4}, {2,3,1}, {3,4,1}
-        }, 0);
-
-        // Additional edge cases
-        runCase(4, new int[][] {
-            {0,1,7}, {1,2,2}, {2,3,1}
-        }, 2);
-        runCase(3, new int[][] {
-            {0,1,10}, {0,1,3}, {1,2,4}, {0,2,20}
-        }, 0);
-        runCase(4, new int[][] {
-            {0,1,2}, {0,2,2}, {1,3,3}, {2,3,3}
-        }, 0);
-    }
-}
-`;
-
-      const response = await fetch(`${API}/api/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: code + driver, input: '' }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || JSON.stringify(data));
-
-      if (data.error || data.exit_code !== 0) {
-        setResults([{
-          name: 'Java compilation / execution',
-          status: 'failed',
-          detail: String(data.error || data.output || 'Execution failed.'),
-        }]);
-        setSummary('Compilation or runtime error. See the compiler details below.');
-        return;
-      }
-
-      const expected = [
-        '0 2 3 8 6',
-        '0',
-        '0 0 5',
-        '0 5 3 9',
-        '0 1 2 3 4',
-        '9 2 0 1',
-        '0 3 7',
-        '0 2 2 5',
-      ];
-      const actualLines = String(data.output ?? '').trim().split(/\r?\n/)
-        .map((line) => line.trim().replace(/\s+/g, ' '));
-      const names = [
-        'Multiple routes and longer alternative',
-        'Single vertex with no edges',
-        'Zero-weight edge',
-        'Cheaper indirect route',
-        'Several competing paths',
-        'Source vertex is not zero',
-        'Duplicate edges',
-        'Multiple equal-cost shortest paths',
-      ];
-
-      const testResults: TestResult[] = expected.map((expectedOutput, index) => {
-        const actual = actualLines[index] ?? '(no output)';
-        return {
-          name: names[index],
-          status: actual === expectedOutput ? 'passed' : 'failed',
-          detail: `Expected: ${expectedOutput} | Actual: ${actual}`,
-        };
-      });
-
-      if (actualLines.length !== expected.length) {
-        testResults.push({
-          name: 'Output format',
-          status: 'failed',
-          detail: `Expected ${expected.length} output lines, received ${actualLines.length}.`,
+        const actual = String(data.output ?? '').trim().replace(/\\s+/g, ' ');
+        if (typeof test.expectedOutput !== 'string') {
+          completed.push({
+            name: test.name,
+            status: 'skipped',
+            detail: `Actual output: ${actual || '(empty)'}. No trusted expected output was supplied.`,
+          });
+          continue;
+        }
+        const expected = test.expectedOutput.trim().replace(/\\s+/g, ' ');
+        const source = test.expectedOutputSource || 'unknown';
+        completed.push({
+          name: test.name,
+          status: actual === expected ? 'passed' : 'failed',
+          detail: `Expected: ${expected} | Actual: ${actual} | Expected-output source: ${source}`,
         });
       }
 
-      setResults(testResults);
-      const passedCount = testResults.filter((item) => item.status === 'passed').length;
-      setSummary(`${passedCount}/${testResults.length} tests passed. Execution time: ${data.time ?? 'not reported'} seconds.`);
+      setResults(completed);
+      const passed = completed.filter((item) => item.status === 'passed').length;
+      const failed = completed.filter((item) => item.status === 'failed').length;
+      const skipped = completed.filter((item) => item.status === 'skipped').length;
+      setSummary(`${passed} passed, ${failed} failed, ${skipped} unverified. Each test was compiled and executed separately. ${harness.oracleNotes || ''}`);
     } catch (cause) {
       setError(`Execution request failed. ${cause instanceof Error ? cause.message : ''}`);
       setSummary('No reliable execution result is available.');
@@ -315,7 +276,7 @@ class Main {
           </div>
           <div className="editor-actions">
             <button className="ghost" onClick={() => setCode(problem?.starterCode ?? provisional.starterCode)}>Reset scaffold</button>
-            <button className="primary" onClick={runTests} disabled={busy || !problem || problem === provisional || problem.executionSupported !== true || problem.executionMode !== 'dijkstra-v1'}>
+            <button className="primary" onClick={runTests} disabled={busy || !problem || problem === provisional || !problem.executionHarness?.driverCode || !problem.executionHarness?.tests?.length}>
               <Play size={15} /> {busy ? 'Running…' : 'Run all tests'}
             </button>
           </div>
@@ -329,12 +290,12 @@ class Main {
             <>
               <h4>{problem.title}</h4>
               <p className="muted">Method: <code>{problem.signature}</code></p>
-              {problem.executionSupported === true && problem.executionMode === 'dijkstra-v1' ? (
-                <p className="muted">Automatic execution is enabled for the Dijkstra test driver.</p>
+              {problem.executionHarness?.driverCode && problem.executionHarness.tests?.length ? (
+                <p className="muted">A problem-specific Java driver was generated with {problem.executionHarness.tests.length} test cases.</p>
               ) : (
                 <div className="notice">
                   <AlertTriangle size={16} />
-                  <span>Problem analysis is available, but automatic execution is not yet supported for this problem. The current compiler driver is Dijkstra-specific, so CodeCoach will not run it against a different method.</span>
+                  <span>Problem analysis is available, but the parser has not supplied a problem-specific execution driver and test inputs yet.</span>
                 </div>
               )}
               <h4>Planned edge cases</h4>
