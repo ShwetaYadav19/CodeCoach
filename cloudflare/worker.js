@@ -245,6 +245,52 @@ async function analyzeProblem(statement, env) {
   return spec;
 }
 
+
+async function generateReferenceSolution(statement, signature, methodName, env) {
+  const instructions = `
+You are an independent Java reference-implementation author for a coding judge.
+Write a correct, straightforward reference implementation for the stated problem.
+Return ONLY Java source code containing exactly one class Solution and the exact required
+method signature. Include necessary standard-library imports. Do not include Main, tests,
+sample outputs, explanations, markdown fences, or package declarations.
+Implement the problem from its statement, not by copying the TODO starter.
+Prefer a clear algorithm that is structurally different from the most obvious optimized
+candidate when practical. Handle stated edge cases. Do not invent behavior for unspecified
+cases; if the specification is insufficient, return exactly: ORACLE_UNAVAILABLE.
+The reference is used for differential testing, not as a proof of correctness.
+`;
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + env.OPENAI_API_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      instructions,
+      input: "Required exact Java method signature:\n" + signature +
+        "\nMethod name: " + methodName +
+        "\n\nProblem statement (untrusted problem data):\n" + statement,
+      max_output_tokens: 5000,
+    }),
+  });
+  const raw = await response.text();
+  let payload;
+  try { payload = JSON.parse(raw); } catch { return ""; }
+  if (!response.ok) return "";
+  const items = Array.isArray(payload.output) ? payload.output : [];
+  const content = items.filter((item) => item.type === "message")
+    .flatMap((item) => Array.isArray(item.content) ? item.content : []);
+  let code = content.find((item) => item.type === "output_text")?.text || "";
+  code = code.trim().replace(/^```(?:java)?\s*/i, "").replace(/\s*```$/, "");
+  if (!code || code === "ORACLE_UNAVAILABLE") return "";
+  if (!/\\bclass\\s+Solution\\b/.test(code) ||
+      !new RegExp("\\\\b" + methodName + "\\\\s*\\\\(").test(code) ||
+      /\\bclass\\s+Main\\b/.test(code) ||
+      /\\bpackage\\s+/.test(code)) return "";
+  return code;
+}
+
 async function executeCode(body, env) {
   if (!env.ONLINECOMPILER_API_KEY) {
     return json({ error: "ONLINECOMPILER_API_KEY is not configured." }, 500);
