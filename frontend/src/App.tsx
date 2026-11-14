@@ -38,8 +38,8 @@ type TestResult = {
 function assembleJavaSource(solutionCode: string, driverCode: string): string {
   const importPattern = /^\\s*import\\s+[^;]+;\\s*$/gm;
   const imports = [
-    ...solutionCode.match(importPattern) ?? [],
-    ...driverCode.match(importPattern) ?? [],
+    ...(solutionCode.match(importPattern) ?? []),
+    ...(driverCode.match(importPattern) ?? []),
   ];
   const solutionBody = solutionCode.replace(importPattern, '');
   const driverBody = driverCode.replace(importPattern, '');
