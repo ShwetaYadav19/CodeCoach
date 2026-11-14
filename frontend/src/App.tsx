@@ -146,15 +146,15 @@ export default function App() {
       setError('The parser did not return a validated execution harness. This problem can be analyzed, but it cannot be executed yet.');
       return;
     }
-    if (!/\bclass\s+Main\\b/.test(harness.driverCode)) {
+    if (!/\bclass\s+Main\b/.test(harness.driverCode)) {
       setError('The generated execution harness is invalid: it must contain a Java Main class.');
       return;
     }
-    if (/\bclass\s+Main\\b/.test(code)) {
+    if (/\bclass\s+Main\b/.test(code)) {
       setError('Please submit only your GFG Solution class. CodeCoach supplies the Main driver.');
       return;
     }
-    if (!/\bclass\s+Solution\\b/.test(code)) {
+    if (!/\bclass\s+Solution\b/.test(code)) {
       setError('Your Java code must contain class Solution.');
       return;
     }
