@@ -10,9 +10,6 @@ type GeneratedTestCase = {
   input: string;
   expectedOutput?: string;
   expectedOutputSource?: 'problem_example' | 'reference_solution' | 'ai_generated' | 'unknown';
-  validatorType?: 'exact_output' | 'topological_order';
-  vertexCount?: number;
-  edges?: number[][];
 };
 
 type ExecutionHarness = {
@@ -194,43 +191,6 @@ export default function App() {
         const rawOutput = String(data.output ?? '').trim();
         const actual = rawOutput.replace(/\s+/g, ' ');
 
-        if (test.validatorType === 'topological_order') {
-          const tokens = rawOutput ? rawOutput.split(/\s+/) : [];
-          const order = tokens.map((token) => Number(token));
-          const vertexCount = test.vertexCount ?? 0;
-          const edges = test.edges ?? [];
-          let validationError = '';
-
-          if (vertexCount <= 0 || order.length !== vertexCount || order.some((v) => !Number.isInteger(v))) {
-            validationError = \`Expected exactly \${vertexCount} integer vertices, received: \${actual || '(empty)'}\`;
-          } else {
-            const position = new Array<number>(vertexCount).fill(-1);
-            for (let i = 0; i < order.length; i++) {
-              const vertex = order[i];
-              if (vertex < 0 || vertex >= vertexCount || position[vertex] !== -1) {
-                validationError = \`Output is not a permutation of vertices 0..\${vertexCount - 1}: \${actual}\`;
-                break;
-              }
-              position[vertex] = i;
-            }
-            if (!validationError) {
-              for (const [from, to] of edges) {
-                if (from < 0 || from >= vertexCount || to < 0 || to >= vertexCount ||
-                    position[from] >= position[to]) {
-                  validationError = \`Invalid topological order: edge \${from} -> \${to} is not respected. Output: \${actual}\`;
-                  break;
-                }
-              }
-            }
-          }
-
-          completed.push({
-            name: test.name,
-            status: validationError ? 'failed' : 'passed',
-            detail: validationError || \`Valid topological ordering: \${actual}\`,
-          });
-          continue;
-        }
 
         if (typeof test.expectedOutput !== 'string' || !test.expectedOutput.trim() || test.expectedOutputSource !== 'problem_example') {
           completed.push({
